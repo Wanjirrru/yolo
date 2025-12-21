@@ -1,0 +1,20 @@
+# Use minimal Node.js Alpine image for small size
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first (for better caching)
+COPY backend/package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy the rest of the backend code
+COPY backend/. .
+
+# Expose port 5000
+EXPOSE 5000
+
+# Start the server
+CMD ["node", "server.js"]  # Adjust if your entry file is index.js or app.js
