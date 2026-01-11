@@ -1,56 +1,91 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const multer = require('multer');
 
-// Product Model (make sure path is correct - adjust if needed)
 const Product = require('../../models/Products');
 
-// @route   GET /api/products
-// @desc    Get ALL products
+// --------------------
+// Multer setup
+// --------------------
+// Save uploaded files to uploads/products
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/products');
+  },
+  filename: function (req, file, cb) {
+    // Keep original filename or add timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+// --------------------
+// Routes
+// --------------------
+
+// GET all products
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+
+    // Convert photo field to full URL for frontend
+    const mappedProducts = products.map(p => ({
+      ...p._doc,
+      photo: p.photo ? `/uploads/products/${p.photo}` : null
+    }));
+
+    res.json(mappedProducts);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-
-// @route   POST /api/products
-// @desc    Create a new product
-router.post('/', async (req, res) => {
+// POST create new product with optional image
+router.post('/', upload.single('photo'), async (req, res) => {
   try {
-    const { name, description, price, quantity, photo } = req.body;
+    const { name, description, price, quantity } = req.body;
 
-    // Simple validation
     if (!name || !price || !quantity) {
       return res.status(400).json({ message: 'Name, price, and quantity are required' });
     }
+
+    const photo = req.file ? req.file.filename : null;
 
     const newProduct = new Product({
       name,
       description,
       price,
       quantity,
-      photo: photo || null,
+      photo
     });
 
     const savedProduct = await newProduct.save();
-    res.status(201).json(savedProduct);
+
+    res.status(201).json({
+      ...savedProduct._doc,
+      photo: photo ? `/uploads/products/${photo}` : null
+    });
   } catch (err) {
     console.error('POST /api/products error:', err);
     res.status(500).json({ message: 'Server error creating product', error: err.message });
   }
 });
 
-// @route   PUT /api/products/:id
-// @desc    Update a product
-router.put('/:id', async (req, res) => {
+// PUT update product (with optional new photo)
+router.put('/:id', upload.single('photo'), async (req, res) => {
   try {
+    const updateData = { ...req.body };
+
+    if (req.file) {
+      updateData.photo = req.file.filename;
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
@@ -58,15 +93,17 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    res.status(200).json(updatedProduct);
+    res.status(200).json({
+      ...updatedProduct._doc,
+      photo: updatedProduct.photo ? `/uploads/products/${updatedProduct.photo}` : null
+    });
   } catch (err) {
     console.error('PUT /api/products error:', err);
     res.status(500).json({ message: 'Server error updating product', error: err.message });
   }
 });
 
-// @route   DELETE /api/products/:id
-// @desc    Delete a product
+// DELETE product
 router.delete('/:id', async (req, res) => {
   try {
     const deletedProduct = await Product.findByIdAndDelete(req.params.id);
