@@ -16,7 +16,7 @@ function ProductList(props) {
                     {props.productList.map(product => (
                         <Product
                             key={product._id}
-                            _id={product._id}
+                            id={product._id}
                             name={product.name}
                             price={product.price}
                             photo={product.photo}

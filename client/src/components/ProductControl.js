@@ -20,11 +20,16 @@ class ProductControl extends Component {
 
     componentDidMount() {
         axios.get('http://192.168.56.10:5000/api/products')
-            .then(res => {
-                this.setState({ actualProductList: res.data });
-            })
-            .catch(err => console.log(err));
-    }
+         .then(res => {
+      const normalizedProducts = res.data.map(p => ({
+        ...p,
+        id: p._id   // 👈 normalize here
+      }));
+      this.setState({ actualProductList: normalizedProducts });
+    })
+    .catch(err => console.error(err));
+   }
+
 
     handleEditProductClick = () => {
         this.setState({ editProduct: true });
@@ -64,7 +69,7 @@ class ProductControl extends Component {
         axios.delete(`http://192.168.56.10:5000/api/products/${id}`)
             .then(() => {
                 this.setState(prevState => ({
-                    actualProductList: prevState.actualProductList.filter(p => p._id !== id),
+                    actualProductList: prevState.actualProductList.filter(p => p.id !== id),
                     formVisibleOnPage: false,
                     selectedProduct: null
                 }));
@@ -73,7 +78,7 @@ class ProductControl extends Component {
     }
 
     handleChangingSelectedProduct = (id) => {
-        const selectedProduct = this.state.actualProductList.find(p => p._id === id);
+        const selectedProduct = this.state.actualProductList.find(p => p.id === id);
         this.setState({ selectedProduct });
     }
 
@@ -82,7 +87,7 @@ class ProductControl extends Component {
             .then(res => {
                 this.setState(prevState => ({
                     actualProductList: prevState.actualProductList.map(p =>
-                        p._id === res.data._id ? res.data : p
+                        p.id === res.data.id ? res.data : p
                     ),
                     editProduct: false,
                     formVisibleOnPage: false,
