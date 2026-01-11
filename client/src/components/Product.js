@@ -7,11 +7,12 @@ function Product(props) {
         <div className="col-12 col-sm-12 col-md-4">
             <div className="product" onClick={() => props.whenProductClicked(props._id)}>
                 <div className="product-img">
-                    <img
-                        src={props.photo || Default_image}
-                        className="img-fluid d-block mx-auto"
-                        alt={props.name}
-                    />
+        <img 
+            src={props.photo ? `http://192.168.56.10:5000/uploads/${props.photo}` : Default_image} 
+            className="img-fluid d-block mx-auto" 
+            alt={props.name}
+        />
+
                 </div>
                 <div className="product-name-cost">
                     <h5 className="float-left gold">{props.name}</h5>

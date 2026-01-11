@@ -13,10 +13,11 @@ function ProductDetail(props) {
                         <div className="preview col-md-6">
                             <div className="preview-pic tab-content">
                                 <div className="tab-pane active" id="pic-1">
-                                    <img 
-                                        src={product.photo || Default_image} 
-                                        alt={product.name} 
-                                    />
+                                <img 
+                                 src={props.photo ? `http://192.168.56.10:5000/uploads/${props.photo}` : Default_image} 
+                                 className="img-fluid d-block mx-auto" 
+                                 alt={props.name}
+                                />
                                 </div>
                             </div>
                         </div>
