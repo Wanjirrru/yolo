@@ -2,47 +2,55 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
+
+// Only configure multer when needed (not globally)
 const upload = multer();
 
 const productRoute = require('./routes/api/productRoute');
 
-// Connecting to the Database
-let mongodb_url = 'mongodb://localhost/';
-let dbName = 'yolomy';
+// --------------------
+// Database connection
+// --------------------
 
-// define a url to connect to the database
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/yolomy';
-mongoose.connect(MONGODB_URI,{useNewUrlParser: true, useUnifiedTopology: true  } )
-let db = mongoose.connection;
+// Use Docker-provided Mongo URI, fallback only for local dev
+const MONGODB_URI =
+  process.env.MONGO_URI || 'mongodb://localhost:27017/yolomy';
 
-// Check Connection
-db.once('open', ()=>{
-    console.log('Database connected successfully')
-})
+// Connect to MongoDB
+mongoose
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => {
+    console.log('Database connected successfully');
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err.message);
+  });
 
-// Check for DB Errors
-db.on('error', (error)=>{
-    console.log(error);
-})
+// --------------------
+// Express app setup
+// --------------------
 
-// Initializing express
-const app = express()
+const app = express();
 
-// Body parser middleware
-app.use(express.json())
+// Body parser
+app.use(express.json());
 
-// 
-app.use(upload.array()); 
-
-// Cors 
+// CORS
 app.use(cors());
 
-// Use Route
-app.use('/api/products', productRoute)
+// Routes
+app.use('/api/products', productRoute);
 
-// Define the PORT
-const PORT = process.env.PORT || 5000
+// --------------------
+// Server
+// --------------------
 
-app.listen(PORT, '0.0.0.0', ()=>{
-    console.log(`Server listening on port ${PORT}`)
-})
+const PORT = process.env.PORT || 5000;
+
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on port ${PORT}`);
+});
