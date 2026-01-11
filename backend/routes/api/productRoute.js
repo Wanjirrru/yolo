@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 
-// Product Model 
+// Product Model (make sure path is correct - adjust if needed)
 const Product = require('../../models/Products');
 
 // @route   GET /api/products
 // @desc    Get ALL products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 }); // optional: newest first
-    res.status(200).json(products);
+    const products = await Product.find().sort({ createdAt: -1 }); // newest first, optional
+    res.status(200).json(products || []); // Always return array, even empty
   } catch (err) {
-    console.error('Error fetching products:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('GET /api/products error:', err);
+    res.status(500).json({ message: 'Server error fetching products', error: err.message });
   }
 });
 
@@ -22,7 +22,7 @@ router.post('/', async (req, res) => {
   try {
     const { name, description, price, quantity, photo } = req.body;
 
-    // Basic validation 
+    // Simple validation
     if (!name || !price || !quantity) {
       return res.status(400).json({ message: 'Name, price, and quantity are required' });
     }
@@ -32,14 +32,14 @@ router.post('/', async (req, res) => {
       description,
       price,
       quantity,
-      photo: photo || null, 
+      photo: photo || null,
     });
 
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (err) {
-    console.error('Error creating product:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('POST /api/products error:', err);
+    res.status(500).json({ message: 'Server error creating product', error: err.message });
   }
 });
 
@@ -59,8 +59,8 @@ router.put('/:id', async (req, res) => {
 
     res.status(200).json(updatedProduct);
   } catch (err) {
-    console.error('Error updating product:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('PUT /api/products error:', err);
+    res.status(500).json({ message: 'Server error updating product', error: err.message });
   }
 });
 
@@ -76,8 +76,8 @@ router.delete('/:id', async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Product deleted' });
   } catch (err) {
-    console.error('Error deleting product:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('DELETE /api/products error:', err);
+    res.status(500).json({ message: 'Server error deleting product', error: err.message });
   }
 });
 
