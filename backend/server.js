@@ -41,6 +41,8 @@ app.use(express.json());
 // CORS
 app.use(cors());
 
+app.use('/images', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 app.use('/api/products', productRoute);
 

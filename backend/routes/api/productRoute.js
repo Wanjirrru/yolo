@@ -8,13 +8,14 @@ const Product = require('../../models/Products');
 // @desc    Get ALL products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 }); // newest first, optional
-    res.status(200).json(products || []); // Always return array, even empty
+    const products = await Product.find();
+    res.json(products);
   } catch (err) {
-    console.error('GET /api/products error:', err);
-    res.status(500).json({ message: 'Server error fetching products', error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
 });
+
 
 // @route   POST /api/products
 // @desc    Create a new product
