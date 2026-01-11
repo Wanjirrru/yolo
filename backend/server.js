@@ -31,7 +31,7 @@ app.use(cors());
 
 // Serve uploaded images
 // This makes `/uploads/products/...` accessible to the frontend
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/products', express.static(path.join(__dirname, 'uploads/products')));
 
 // Routes
 app.use('/api/products', productRoute);
