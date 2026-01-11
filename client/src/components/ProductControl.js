@@ -1,3 +1,4 @@
+// Fixed API URL on Jan 11 2026
 import React, { Component } from 'react';
 import axios from 'axios';
 import ProductList from './ProductList';
