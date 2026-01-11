@@ -1,36 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
-
 const Product = require('../../models/Products');
+
+// --------------------
+// Ensure uploads folder exists
+// --------------------
+const uploadDir = path.join(__dirname, '../../uploads/products');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // --------------------
 // Multer setup
 // --------------------
-// Save uploaded files to uploads/products
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/products');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Keep original filename or add timestamp
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s/g, '_'));
   }
 });
 const upload = multer({ storage });
 
 // --------------------
-// Routes
-// --------------------
-
 // GET all products
+// --------------------
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find();
 
-    // Convert photo field to full URL for frontend
+    // Map photo to a URL
     const mappedProducts = products.map(p => ({
       ...p._doc,
       photo: p.photo ? `/uploads/products/${p.photo}` : null
@@ -43,7 +47,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST create new product with optional image
+// --------------------
+// POST new product with optional image
+// --------------------
 router.post('/', upload.single('photo'), async (req, res) => {
   try {
     const { name, description, price, quantity } = req.body;
@@ -74,7 +80,9 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 });
 
-// PUT update product (with optional new photo)
+// --------------------
+// PUT update product with optional new photo
+// --------------------
 router.put('/:id', upload.single('photo'), async (req, res) => {
   try {
     const updateData = { ...req.body };
@@ -103,7 +111,9 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   }
 });
 
+// --------------------
 // DELETE product
+// --------------------
 router.delete('/:id', async (req, res) => {
   try {
     const deletedProduct = await Product.findByIdAndDelete(req.params.id);
@@ -118,5 +128,10 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'Server error deleting product', error: err.message });
   }
 });
+
+// --------------------
+// Serve uploaded product images
+// --------------------
+router.use('/uploads/products', express.static(uploadDir));
 
 module.exports = router;
