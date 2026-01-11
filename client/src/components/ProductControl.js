@@ -1,4 +1,3 @@
-// Fixed API URL on Jan 11 2026
 import React, { Component } from 'react';
 import axios from 'axios';
 import ProductList from './ProductList';
@@ -6,14 +5,6 @@ import NewProductForm from './NewProductForm';
 import ProductDetail from './ProductDetail';
 import AddProduct from './AddProduct';
 import EditProductForm from './EditProductForm';
-
-// Import local product images
-import tshirt from '../images/products/tshirt.png';
-import backpack from '../images/products/backpack.png';
-import pants from '../images/products/pants.png';
-import trekkingshoes from '../images/products/trekkingshoes.png';
-import giacket from '../images/products/giacket.png';
-import tshirt_ladies from '../images/products/tshirt_ladies.png';
 import Default_image from '../images/product_image.jpeg';
 
 class ProductControl extends Component {
@@ -23,29 +14,14 @@ class ProductControl extends Component {
             formVisibleOnPage: false,
             actualProductList: [],
             selectedProduct: null,
-            editProduct: false
+            editProduct: false,
         };
     }
 
     componentDidMount() {
         axios.get('http://192.168.56.10:5000/api/products')
             .then(res => {
-                const imageMap = {
-                    'T-Shirt': tshirt,
-                    'BackPack': backpack,
-                    'Pants': pants,
-                    'Trekking Shoes': trekkingshoes,
-                    'Jacket': giacket,
-                    'T-Shirt Ladies': tshirt_ladies
-                };
-
-                // Attach photo to each product
-                const productsWithImages = res.data.map(product => ({
-                    ...product,
-                    photo: imageMap[product.name] || Default_image
-                }));
-
-                this.setState({ actualProductList: productsWithImages });
+                this.setState({ actualProductList: res.data });
             })
             .catch(err => console.log(err));
     }
@@ -54,41 +30,46 @@ class ProductControl extends Component {
         this.setState({ editProduct: true });
     }
 
-    handleAddButtonClick = (id) => {
-        const BuyProduct = this.state.actualProductList.find(p => p._id === id);
-        BuyProduct.quantity = BuyProduct.quantity - 1;
-        if (BuyProduct.quantity <= 0) BuyProduct.quantity = "Product is not Available";
-
-        this.setState({ selectedProduct: BuyProduct });
-    }
-
     handleClick = () => {
         if (this.state.editProduct) {
             this.setState({ editProduct: false });
-        } else if (this.state.selectedProduct != null) {
-            this.setState({ formVisibleOnPage: false, selectedProduct: null });
+        } else if (this.state.selectedProduct) {
+            this.setState({
+                formVisibleOnPage: false,
+                selectedProduct: null
+            });
         } else {
-            this.setState(prevState => ({ formVisibleOnPage: !prevState.formVisibleOnPage }));
+            this.setState(prevState => ({
+                formVisibleOnPage: !prevState.formVisibleOnPage
+            }));
         }
     }
 
-    handleAddingNewProduct = (newProduct) => {
-        axios.post('http://192.168.56.10:5000/api/products', newProduct)
-            .then(res => console.log(res.data));
-
-        this.setState({ formVisibleOnPage: false });
+    handleAddingNewProduct = (formData) => {
+        // formData includes the file and other product info
+        axios.post('http://192.168.56.10:5000/api/products', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        .then(res => {
+            // Update product list with newly added product
+            this.setState(prevState => ({
+                actualProductList: [...prevState.actualProductList, res.data],
+                formVisibleOnPage: false
+            }));
+        })
+        .catch(err => console.log(err));
     }
 
     handleDeletingProduct = (id) => {
         axios.delete(`http://192.168.56.10:5000/api/products/${id}`)
-            .then(res => console.log(res.data))
-            .catch(error => console.log(error));
-
-        this.setState({
-            actualProductList: this.state.actualProductList.filter(product => product._id !== id),
-            formVisibleOnPage: false,
-            selectedProduct: null
-        });
+            .then(() => {
+                this.setState(prevState => ({
+                    actualProductList: prevState.actualProductList.filter(p => p._id !== id),
+                    formVisibleOnPage: false,
+                    selectedProduct: null
+                }));
+            })
+            .catch(err => console.log(err));
     }
 
     handleChangingSelectedProduct = (id) => {
@@ -98,10 +79,17 @@ class ProductControl extends Component {
 
     handleEditingProduct = (editedProduct) => {
         axios.put(`http://192.168.56.10:5000/api/products/${this.state.selectedProduct._id}`, editedProduct)
-            .then(res => console.log(res.data));
-
-        this.setState({ editProduct: false, formVisibleOnPage: false });
-        window.location = '/';
+            .then(res => {
+                this.setState(prevState => ({
+                    actualProductList: prevState.actualProductList.map(p =>
+                        p._id === res.data._id ? res.data : p
+                    ),
+                    editProduct: false,
+                    formVisibleOnPage: false,
+                    selectedProduct: null
+                }));
+            })
+            .catch(err => console.log(err));
     }
 
     render() {
@@ -109,30 +97,38 @@ class ProductControl extends Component {
         let buttonText = null;
 
         if (this.state.editProduct) {
-            currentlyVisibleState = <EditProductForm product={this.state.selectedProduct} onEditProduct={this.handleEditingProduct} />;
+            currentlyVisibleState = <EditProductForm
+                product={this.state.selectedProduct}
+                onEditProduct={this.handleEditingProduct}
+            />;
             buttonText = "Back to Product Detail";
-        } else if (this.state.selectedProduct != null) {
+        } else if (this.state.selectedProduct) {
             currentlyVisibleState = <ProductDetail
                 product={this.state.selectedProduct}
-                onBuyButtonClick={this.handleAddButtonClick}
+                onBuyButtonClick={() => {}}
                 onDeleteProduct={this.handleDeletingProduct}
                 onEditProductClick={this.handleEditProductClick}
             />;
-            buttonText = "Back to product list";
+            buttonText = "Back to Product List";
         } else if (this.state.formVisibleOnPage) {
-            currentlyVisibleState = <NewProductForm onNewProductCreation={this.handleAddingNewProduct} />;
-            buttonText = "Back to product list";
+            currentlyVisibleState = <NewProductForm
+                onNewProductCreation={this.handleAddingNewProduct}
+            />;
+            buttonText = "Back to Product List";
         } else {
             currentlyVisibleState = <ProductList
                 productList={this.state.actualProductList}
                 onProductSelection={this.handleChangingSelectedProduct}
             />;
-            buttonText = "Add a product";
+            buttonText = "Add a Product";
         }
 
         return (
             <React.Fragment>
-                <AddProduct buttonText={buttonText} whenButtonClicked={this.handleClick} />
+                <AddProduct
+                    buttonText={buttonText}
+                    whenButtonClicked={this.handleClick}
+                />
                 {currentlyVisibleState}
             </React.Fragment>
         );
